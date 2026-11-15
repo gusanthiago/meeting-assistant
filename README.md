@@ -204,3 +204,9 @@ Data volume, not request rate, is the main constraint.
 14. [ ] **Separate segments index** with `collapse` on `meeting_id`: when nested documents inflate indexing cost and index size. _Now: segments nested in the meeting document._
 15. [ ] **LLM cost levers** (prompt caching, Message Batches API for non-urgent work): when spend per meeting becomes material. _Now: one Haiku 5.5 call per summary, ~$51k a month at 1M users._
 16. [ ] **GraphQL layer** over the same services, with REST kept for uploads: when several clients (mobile, integrations, public API) need different shapes of the same data. _Now: REST + OpenAPI, one client._
+
+## Demo
+
+A one-minute walkthrough: record a meeting in the browser, watch it get transcribed and summarized, then find it with search. Click the image to play the video.
+
+[![Demo: a recorded meeting with its transcript, a Claude summary and an action item](docs/demo/poster.jpg)](docs/demo/demo.mp4)
