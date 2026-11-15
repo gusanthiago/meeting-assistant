@@ -58,23 +58,23 @@ stateDiagram-v2
 - **Clean replacements and deletes:** every upload gets its own storage key. Replacing a recording or deleting a meeting removes the old files and search entries, even when a job is running at that moment.
 - **Search:** one OpenSearch document per meeting, with transcript lines as nested documents so a match points to the exact moment. The index is versioned behind an alias; a mapping change is migrated with `_reindex` and an atomic alias swap, and `reindex` rebuilds it from Postgres.
 
-<details>
-<summary><b>Upload pipeline, backend layers and data model</b></summary>
+### Upload pipeline
 
 ![From upload to summary: each step saves its result and enqueues the next job in one transaction, while the browser polls with ETags](docs/architecture/upload-pipeline.svg)
+
+### Backend layers
 
 ![Backend layers: cmd/app wires entry points (api/gen, api, River workers), the application layer (internal/meeting, internal/jobs) and adapters that reach Postgres, RustFS, Whisper, the optional Claude API and OpenSearch; internal/domain is imported by every layer](docs/architecture/backend-layers.svg)
 
 Dependencies point inward: handlers call use cases (`internal/meeting`), use cases and pipeline steps (`internal/jobs`) call adapters (`store`, `storage`, `transcription`, `summary`, `search`), `internal/domain` holds statuses, rules and errors, and `cmd/app` wires everything from config.
 
+### Data model
+
 ![Data model: workspaces, meetings, transcripts, summaries and action_items, plus River's job table, with audio in RustFS and a derived copy in OpenSearch](docs/architecture/data-model.svg)
 
 Every table carries `workspace_id`, so accounts and sharding can come later. IDs are UUIDv7 (time-ordered), which keeps inserts index-friendly and lets lists paginate by ID.
 
-</details>
-
-<details>
-<summary><b>REST API</b></summary>
+## REST API
 
 `api/openapi.yaml` is the contract: Go routing and types come from oapi-codegen, TypeScript types from openapi-typescript. Every JSON response is `{"code", "status", "data"}`, or `{"code", "status", "error"}` on failure.
 
@@ -93,17 +93,12 @@ Every table carries `workspace_id`, so accounts and sharding can come later. IDs
 | `GET` | `/v1/search` | Search titles, participants, summaries, action items and transcripts |
 | `GET` | `/healthz`, `/readyz` | Liveness, and readiness of Postgres, OpenSearch and storage |
 
-</details>
-
-<details>
-<summary><b>Frontend</b></summary>
+## Frontend
 
 - **Pages:** meetings grouped by day with filters, search and a highlights panel; a record page using `MediaRecorder` or a file; a meeting page with the player synced to the transcript, the summary and action items.
 - **Server state:** TanStack Query fetches, caches and polls, and only while a meeting is processing. ETags make unchanged polls cheap.
 - **Typed client:** openapi-fetch typed by the generated schema, so contract changes surface as type errors.
 - **Small by choice:** a tiny History API router instead of a routing library, Tailwind theme tokens, and pure helpers in `src/lib` covered by `it.each` tests.
-
-</details>
 
 ## Development
 
@@ -116,8 +111,7 @@ make logs               # follow service logs
 
 Go tests are table-driven and TypeScript tests use `it.each` / `describe.each`. Web tests run in the container because Tailwind 4 needs Node 20+.
 
-<details>
-<summary><b>Code layout</b></summary>
+### Code layout
 
 ```
 api/openapi.yaml          REST contract (source of truth)
@@ -141,8 +135,6 @@ docs/architecture/        diagrams used in this README
 deploy/pgbouncer/         PgBouncer image
 scripts/smoke.sh          end-to-end checks
 ```
-
-</details>
 
 ## Stack
 
