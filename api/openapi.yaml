@@ -1,0 +1,540 @@
+openapi: 3.0.3
+info:
+  title: Meeting Assistant API
+  version: 0.1.0
+  description: |
+    Record or upload meetings, get a transcript, a summary with action items,
+    and search across meetings. Processing runs in the background: endpoints that
+    start work return `202 Accepted`, and clients poll `GET /v1/meetings/{meetingId}`
+    (cheap with `If-None-Match`, which returns `304` while nothing changed).
+
+    Every JSON response uses the same envelope: `{code, status, data}` on success
+    and `{code, status, error}` on failure, where `code` repeats the HTTP status and
+    `status` is its text (for example `Not Found`).
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: meetings
+  - name: action-items
+  - name: search
+  - name: health
+
+paths:
+  /v1/meetings:
+    get:
+      operationId: listMeetings
+      tags: [meetings]
+      summary: List meetings, newest first
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: cursor
+          in: query
+          description: The `next_cursor` from the previous page.
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: A page of meetings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingListResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+    post:
+      operationId: createMeeting
+      tags: [meetings]
+      summary: Create a meeting, before its recording is uploaded
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          description: Repeating a request with the same key returns the meeting it created instead of a new one.
+          schema: { type: string, maxLength: 200 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMeetingRequest" }
+      responses:
+        "201":
+          description: Meeting created
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingResponse" }
+        "200":
+          description: Same Idempotency-Key as an earlier request; returns that meeting
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /v1/meetings/{meetingId}:
+    parameters:
+      - $ref: "#/components/parameters/MeetingId"
+    get:
+      operationId: getMeeting
+      tags: [meetings]
+      summary: Get a meeting with its status, summary and action items
+      responses:
+        "200":
+          description: The meeting
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingDetailResponse" }
+        "304": { description: Not modified since the ETag sent in If-None-Match }
+        "404": { $ref: "#/components/responses/Error" }
+    delete:
+      operationId: deleteMeeting
+      tags: [meetings]
+      summary: Delete a meeting with its recording, transcript, summary and search entry
+      responses:
+        "204": { description: Meeting deleted }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/meetings/{meetingId}/retry:
+    parameters:
+      - $ref: "#/components/parameters/MeetingId"
+    post:
+      operationId: retryMeeting
+      tags: [meetings]
+      summary: Process a failed meeting again from its stored recording
+      responses:
+        "202":
+          description: Processing queued
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingResponse" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /v1/meetings/{meetingId}/recording:
+    parameters:
+      - $ref: "#/components/parameters/MeetingId"
+    put:
+      operationId: uploadRecording
+      tags: [meetings]
+      summary: Upload or replace the meeting's audio, then start processing
+      description: |
+        The body is the raw audio. A meeting has one recording, so uploading again
+        replaces it and reprocesses the meeting. Returns `409` while the meeting is
+        being processed.
+      parameters:
+        - name: duration_ms
+          in: query
+          description: Length of the recording, as measured by the recorder.
+          schema: { type: integer, format: int64, minimum: 0 }
+      requestBody:
+        required: true
+        content:
+          audio/*:
+            schema: { type: string, format: binary }
+      responses:
+        "202":
+          description: Recording stored; processing queued
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingResponse" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+    get:
+      operationId: getRecording
+      tags: [meetings]
+      summary: Stream the meeting's audio (supports Range requests)
+      parameters:
+        - name: Range
+          in: header
+          schema: { type: string }
+      responses:
+        "200":
+          description: The whole recording
+          content:
+            audio/*:
+              schema: { type: string, format: binary }
+        "206":
+          description: The requested byte range
+          content:
+            audio/*:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/meetings/{meetingId}/transcript:
+    parameters:
+      - $ref: "#/components/parameters/MeetingId"
+    get:
+      operationId: getTranscript
+      tags: [meetings]
+      summary: Get the transcript, once transcription has finished
+      responses:
+        "200":
+          description: The transcript
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptResponse" }
+        "304": { description: Not modified since the ETag sent in If-None-Match }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/meetings/{meetingId}/summary/regenerate:
+    parameters:
+      - $ref: "#/components/parameters/MeetingId"
+    post:
+      operationId: regenerateSummary
+      tags: [meetings]
+      summary: Write the summary and action items again from the transcript
+      responses:
+        "202":
+          description: Summary queued
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingResponse" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /v1/action-items/{actionItemId}:
+    parameters:
+      - name: actionItemId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      operationId: updateActionItem
+      tags: [action-items]
+      summary: Mark an action item done or not done
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateActionItemRequest" }
+      responses:
+        "200":
+          description: The updated action item
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActionItemResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /v1/search:
+    get:
+      operationId: searchMeetings
+      tags: [search]
+      summary: Search titles, participants, summaries, action items and transcripts
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: Matching meetings, best first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResultsResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /healthz:
+    get:
+      operationId: getHealth
+      tags: [health]
+      summary: Liveness
+      responses:
+        "200":
+          description: The process is up
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /readyz:
+    get:
+      operationId: getReadiness
+      tags: [health]
+      summary: Readiness of Postgres, OpenSearch and storage
+      responses:
+        "200":
+          description: All dependencies reachable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+        "503":
+          description: A dependency is unreachable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+components:
+  parameters:
+    MeetingId:
+      name: meetingId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  headers:
+    Location:
+      description: URL of the meeting
+      schema: { type: string }
+    ETag:
+      description: Version of the representation, for If-None-Match
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    MeetingStatus:
+      type: string
+      enum: [recording, queued, transcribing, summarizing, ready, failed]
+      description: |
+        `recording` waits for audio; `queued`, `transcribing` and `summarizing` are processing; `ready` and `failed` are final.
+
+    Meeting:
+      type: object
+      required: [id, title, participants, status, has_recording, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        participants:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/MeetingStatus" }
+        error:
+          type: string
+          nullable: true
+          description: Why processing failed, when status is `failed`.
+        summary_error:
+          type: string
+          nullable: true
+          description: Why the last summary attempt failed. The meeting stays `ready`, searchable, with any earlier summary.
+        duration_ms: { type: integer, format: int64, nullable: true }
+        has_recording: { type: boolean }
+        started_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    MeetingDetail:
+      allOf:
+        - $ref: "#/components/schemas/Meeting"
+        - type: object
+          required: [action_items]
+          properties:
+            summary:
+              allOf:
+                - $ref: "#/components/schemas/Summary"
+              nullable: true
+            action_items:
+              type: array
+              items: { $ref: "#/components/schemas/ActionItem" }
+
+    MeetingList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Meeting" }
+        next_cursor: { type: string, format: uuid, nullable: true }
+
+    CreateMeetingRequest:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        participants:
+          type: array
+          maxItems: 50
+          items: { type: string, minLength: 1, maxLength: 100 }
+        started_at: { type: string, format: date-time }
+
+    Summary:
+      type: object
+      required: [overview, takeaways, decisions, questions, provider, created_at]
+      properties:
+        overview: { type: string }
+        takeaways:
+          type: array
+          items: { type: string }
+        decisions:
+          type: array
+          items: { type: string }
+        questions:
+          type: array
+          items: { type: string }
+        provider: { type: string, description: "`fake` or `claude`" }
+        model: { type: string, nullable: true }
+        input_tokens: { type: integer, format: int64, nullable: true }
+        output_tokens: { type: integer, format: int64, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    ActionItem:
+      type: object
+      required: [id, text, done]
+      properties:
+        id: { type: string, format: uuid }
+        text: { type: string }
+        owner: { type: string, nullable: true }
+        due: { type: string, nullable: true, description: "Due date as said in the meeting, e.g. \"Friday\"" }
+        done: { type: boolean }
+
+    UpdateActionItemRequest:
+      type: object
+      required: [done]
+      properties:
+        done: { type: boolean }
+
+    Segment:
+      type: object
+      required: [speaker, start_ms, end_ms, text]
+      properties:
+        speaker: { type: string }
+        start_ms: { type: integer, format: int64 }
+        end_ms: { type: integer, format: int64 }
+        text: { type: string }
+
+    Transcript:
+      type: object
+      required: [meeting_id, language, segments]
+      properties:
+        meeting_id: { type: string, format: uuid }
+        language: { type: string }
+        segments:
+          type: array
+          items: { $ref: "#/components/schemas/Segment" }
+
+    SearchResults:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SearchHit" }
+
+    SearchHit:
+      type: object
+      required: [meeting_id, title, snippets]
+      properties:
+        meeting_id: { type: string, format: uuid }
+        title: { type: string }
+        started_at: { type: string, format: date-time, nullable: true }
+        snippets:
+          type: array
+          description: Matching transcript lines, plus title or summary matches without a timestamp.
+          items: { $ref: "#/components/schemas/Snippet" }
+
+    Snippet:
+      type: object
+      required: [field, parts]
+      properties:
+        field: { type: string, enum: [title, participants, summary, action_items, transcript] }
+        speaker: { type: string, nullable: true }
+        start_ms: { type: integer, format: int64, nullable: true }
+        parts:
+          type: array
+          description: The snippet split into plain and matching parts, so clients never render HTML.
+          items: { $ref: "#/components/schemas/SnippetPart" }
+
+    SnippetPart:
+      type: object
+      required: [text, match]
+      properties:
+        text: { type: string }
+        match: { type: boolean }
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok, unavailable] }
+        checks:
+          type: object
+          additionalProperties: { type: string }
+
+    WebResponse:
+      type: object
+      required: [code, status]
+      properties:
+        code: { type: integer, description: The HTTP status code }
+        status: { type: string, description: "The HTTP status text, e.g. Not Found" }
+
+    ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [error]
+          properties:
+            error: { type: string }
+
+    MeetingDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/MeetingDetail" }
+
+    MeetingListResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/MeetingList" }
+
+    MeetingResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/Meeting" }
+
+    TranscriptResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/Transcript" }
+
+    ActionItemResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/ActionItem" }
+
+    SearchResultsResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/SearchResults" }
+
+    HealthResponse:
+      allOf:
+        - $ref: "#/components/schemas/WebResponse"
+        - type: object
+          required: [data]
+          properties:
+            data: { $ref: "#/components/schemas/Health" }

@@ -1,0 +1,6 @@
+# Generates the HTTP routing + types from api/openapi.yaml (run `make gen`).
+package: gen
+output: api.gen.go
+generate:
+  std-http-server: true
+  models: true

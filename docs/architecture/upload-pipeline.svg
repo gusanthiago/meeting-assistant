@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -16 1252 582" width="1252" height="582" role="img" aria-labelledby="title desc">
+  <title id="title">From upload to summary</title>
+  <desc id="desc">Upload pipeline. The browser creates a meeting, uploads audio with PUT, and gets 202 Accepted after the API stores the audio and, in one transaction, sets the status to queued and enqueues a transcribe job. Workers take the job, read the audio, send it to Whisper, then save the transcript and enqueue summarize in one transaction. Summarize calls Claude, then saves the summary and enqueues indexing in one transaction and sets the status to ready. Indexing upserts the meeting into OpenSearch. The browser polls every two seconds and gets 304 until the status changes.</desc>
+  <style>
+    svg { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .bg { fill: #ffffff; stroke: #d5dbe1; stroke-width: 1px; }
+    .d-box { fill: #ffffff; stroke: #8794a1; stroke-width: 1.25px; }
+    .d-chip { fill: #f3f5f7; stroke: #cfd6dd; stroke-width: 1px; }
+    .d-ext { fill: #fbf0e2; stroke: #a3600b; stroke-width: 1.25px; }
+    .d-group { fill: none; stroke: #8794a1; stroke-width: 1.25px; stroke-dasharray: 6 5; }
+    .d-frame { fill: none; stroke: #8794a1; stroke-width: 1px; }
+    .d-frame-tab { fill: #f3f5f7; stroke: #8794a1; stroke-width: 1px; }
+    .d-life { fill: none; stroke: #cfd6dd; stroke-width: 1px; stroke-dasharray: 3 4; }
+    .d-arrow { fill: none; stroke: #8794a1; stroke-width: 1.4px; }
+    .d-arrow.acc { stroke: #0b6e88; stroke-width: 2px; }
+    .d-arrow.ext { stroke: #a3600b; }
+    .d-arrow.ret { stroke-dasharray: 5 4; }
+    .d-head { fill: #8794a1; }
+    .d-head.acc { fill: #0b6e88; }
+    .d-head.ext { fill: #a3600b; }
+    .d-title { fill: #15202b; font-size: 13px; font-weight: 600; }
+    .d-sub { fill: #586674; font-size: 11.5px; }
+    .d-lbl { fill: #586674; font-size: 11px; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+    .d-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .d-tag { fill: #586674; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.04em; }
+    .d-chip-text { fill: #15202b; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; }
+    .d-pill { fill: #e1f0f4; stroke: #0b6e88; stroke-width: 1px; }
+    .d-pill-text { fill: #0b6e88; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 600; }
+    .d-pill.fail { fill: #ffffff; stroke: #b3261e; stroke-dasharray: 4 3; }
+    .d-pill-text.fail { fill: #b3261e; }
+  </style>
+  <rect class="bg" x="-16" y="-16" width="1252" height="582" rx="12"/>
+
+          <defs>
+            <marker id="q-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="q-arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head acc" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="q-arr-ext" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head ext" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+
+          <!-- Status column header -->
+          <text class="d-tag" x="56" y="44" text-anchor="middle">meeting.status</text>
+
+          <!-- Lane headers -->
+          <rect class="d-box" x="120" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="180" y="36" text-anchor="middle">Browser</text>
+          <text class="d-sub" x="180" y="53" text-anchor="middle">React SPA</text>
+
+          <rect class="d-box" x="280" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="340" y="36" text-anchor="middle">api</text>
+          <text class="d-sub" x="340" y="53" text-anchor="middle">REST handlers</text>
+
+          <rect class="d-box" x="430" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="490" y="36" text-anchor="middle">RustFS</text>
+          <text class="d-sub" x="490" y="53" text-anchor="middle">audio (S3 API)</text>
+
+          <rect class="d-box" x="590" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="650" y="36" text-anchor="middle">Postgres</text>
+          <text class="d-sub" x="650" y="53" text-anchor="middle">via PgBouncer</text>
+
+          <rect class="d-box" x="800" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="860" y="36" text-anchor="middle">River workers</text>
+          <text class="d-sub" x="860" y="53" text-anchor="middle">same Go binary</text>
+
+          <rect class="d-box" x="960" y="16" width="120" height="46" rx="6"/>
+          <text class="d-title" x="1020" y="36" text-anchor="middle">Whisper · Claude</text>
+          <text class="d-sub" x="1020" y="53" text-anchor="middle">local · optional API</text>
+
+          <rect class="d-box" x="1095" y="16" width="110" height="46" rx="6"/>
+          <text class="d-title" x="1150" y="36" text-anchor="middle">OpenSearch</text>
+          <text class="d-sub" x="1150" y="53" text-anchor="middle">search index</text>
+
+          <!-- Lifelines -->
+          <path class="d-life" d="M180,62 V540"/>
+          <path class="d-life" d="M340,62 V540"/>
+          <path class="d-life" d="M490,62 V540"/>
+          <path class="d-life" d="M650,62 V540"/>
+          <path class="d-life" d="M860,62 V540"/>
+          <path class="d-life" d="M1020,62 V540"/>
+          <path class="d-life" d="M1150,62 V540"/>
+
+          <!-- Polling loop frame -->
+          <rect class="d-frame" x="118" y="238" width="284" height="230" rx="6"/>
+          <rect class="d-frame-tab" x="118" y="238" width="86" height="20" rx="3"/>
+          <text class="d-tag" x="126" y="252">every ~2s</text>
+
+          <!-- 0 create meeting -->
+          <path class="d-arrow" d="M180,92 H339" marker-end="url(#q-arr)"/>
+          <text class="d-lbl d-mono" x="260" y="84" text-anchor="middle">POST /v1/meetings</text>
+          <rect class="d-pill" x="8" y="81" width="96" height="22" rx="11"/>
+          <text class="d-pill-text" x="56" y="96" text-anchor="middle">recording</text>
+
+          <!-- 1 upload -->
+          <path class="d-arrow" d="M180,124 H339" marker-end="url(#q-arr)"/>
+          <text class="d-lbl d-mono" x="260" y="116" text-anchor="middle">PUT …/recording</text>
+
+          <!-- 2 store audio -->
+          <path class="d-arrow" d="M340,154 H489" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="415" y="146" text-anchor="middle">store audio</text>
+
+          <!-- 3 tx -->
+          <path class="d-arrow acc" d="M340,186 H649" marker-end="url(#q-arr-acc)"/>
+          <text class="d-lbl" x="495" y="178" text-anchor="middle">one tx: status + transcribe job</text>
+          <rect class="d-pill" x="8" y="175" width="96" height="22" rx="11"/>
+          <text class="d-pill-text" x="56" y="190" text-anchor="middle">queued</text>
+
+          <!-- 4 202 -->
+          <path class="d-arrow ret" d="M340,218 H181" marker-end="url(#q-arr)"/>
+          <text class="d-lbl d-mono" x="260" y="210" text-anchor="middle">202 Accepted</text>
+
+          <!-- 5 take job -->
+          <path class="d-arrow" d="M860,264 H651" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="755" y="256" text-anchor="middle">take transcribe job</text>
+          <rect class="d-pill" x="8" y="253" width="96" height="22" rx="11"/>
+          <text class="d-pill-text" x="56" y="268" text-anchor="middle">transcribing</text>
+
+          <!-- polling -->
+          <path class="d-arrow" d="M180,290 H339" marker-end="url(#q-arr)"/>
+          <text class="d-lbl d-mono" x="260" y="282" text-anchor="middle">GET …/{id} + ETag</text>
+          <path class="d-arrow ret" d="M340,322 H181" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="260" y="314" text-anchor="middle">304, or 200 on change</text>
+
+          <!-- 6 read audio -->
+          <path class="d-arrow" d="M860,296 H491" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="570" y="288" text-anchor="middle">read audio</text>
+
+          <!-- 7 stt -->
+          <path class="d-arrow" d="M860,328 H1019" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="940" y="320" text-anchor="middle">transcribe (Whisper)</text>
+
+          <!-- 8 tx -->
+          <path class="d-arrow acc" d="M860,360 H651" marker-end="url(#q-arr-acc)"/>
+          <text class="d-lbl" x="755" y="352" text-anchor="middle">transcript + summarize job</text>
+          <rect class="d-pill" x="8" y="349" width="96" height="22" rx="11"/>
+          <text class="d-pill-text" x="56" y="364" text-anchor="middle">summarizing</text>
+
+          <!-- 9 claude -->
+          <path class="d-arrow ext" d="M860,400 H1019" marker-end="url(#q-arr-ext)"/>
+          <text class="d-lbl" x="940" y="392" text-anchor="middle">summarize (Claude, optional)</text>
+
+          <!-- 10 tx -->
+          <path class="d-arrow acc" d="M860,432 H651" marker-end="url(#q-arr-acc)"/>
+          <text class="d-lbl" x="755" y="424" text-anchor="middle">summary + index job</text>
+          <rect class="d-pill" x="8" y="421" width="96" height="22" rx="11"/>
+          <text class="d-pill-text" x="56" y="436" text-anchor="middle">ready</text>
+
+          <!-- polling sees ready -->
+          <path class="d-arrow ret" d="M340,448 H181" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="260" y="440" text-anchor="middle">200 · status ready</text>
+
+          <!-- 11 index -->
+          <path class="d-arrow" d="M860,484 H1149" marker-end="url(#q-arr)"/>
+          <text class="d-lbl" x="1085" y="476" text-anchor="middle">upsert meeting doc</text>
+
+          <!-- failed -->
+          <rect class="d-pill fail" x="8" y="489" width="96" height="22" rx="11"/>
+          <text class="d-pill-text fail" x="56" y="504" text-anchor="middle">failed</text>
+          <text class="d-lbl" x="56" y="528" text-anchor="middle">if transcription fails</text>
+        </svg>

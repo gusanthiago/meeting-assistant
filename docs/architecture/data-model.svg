@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -16 1042 712" width="1042" height="712" role="img" aria-labelledby="title desc">
+  <title id="title">Data model</title>
+  <desc id="desc">Data model. A workspace has many meetings. A meeting has one transcript, one summary and many action items, and every table carries workspace_id. River's job table lives in the same database and points at a meeting through args.meeting_id without a foreign key. A meeting's audio_key names an object in RustFS, and OpenSearch keeps a derived copy with one document per meeting.</desc>
+  <style>
+    svg { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .bg { fill: #ffffff; stroke: #d5dbe1; stroke-width: 1px; }
+    .d-box { fill: #ffffff; stroke: #8794a1; stroke-width: 1.25px; }
+    .d-chip { fill: #f3f5f7; stroke: #cfd6dd; stroke-width: 1px; }
+    .d-ext { fill: #fbf0e2; stroke: #a3600b; stroke-width: 1.25px; }
+    .d-band { fill: #f6f8fa; stroke: #d5dbe1; stroke-width: 1px; }
+    .d-band-label { fill: #586674; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; letter-spacing: 0.06em; }
+    .d-entity-head { fill: #e1f0f4; }
+    .d-sep { fill: none; stroke: #8794a1; stroke-width: 1px; }
+    .d-muted-box { fill: #ffffff; stroke: #8794a1; stroke-width: 1.25px; stroke-dasharray: 5 3; }
+    .d-arrow { fill: none; stroke: #8794a1; stroke-width: 1.4px; }
+    .d-arrow.acc { stroke: #0b6e88; stroke-width: 2px; }
+    .d-arrow.ext { stroke: #a3600b; }
+    .d-arrow.ret { stroke-dasharray: 5 4; }
+    .d-head { fill: #8794a1; }
+    .d-head.acc { fill: #0b6e88; }
+    .d-head.ext { fill: #a3600b; }
+    .d-title { fill: #15202b; font-size: 13px; font-weight: 600; }
+    .d-sub { fill: #586674; font-size: 11.5px; }
+    .d-lbl { fill: #586674; font-size: 11px; paint-order: stroke; stroke: #ffffff; stroke-width: 4px; stroke-linejoin: round; }
+    .d-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .d-col { fill: #15202b; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; }
+    .d-type { fill: #586674; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; }
+    .d-key { fill: #0b6e88; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 9.5px; font-weight: 600; }
+  </style>
+  <rect class="bg" x="-16" y="-16" width="1042" height="712" rx="12"/>
+<defs><marker id="e-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0,0 L10,5 L0,10 z"/></marker><marker id="e-arr-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head acc" d="M0,0 L10,5 L0,10 z"/></marker><marker id="e-arr-ext" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head ext" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+<rect class="d-box" x="30" y="40" width="220" height="84" rx="6"/>
+<rect class="d-entity-head" x="30.6" y="40.6" width="218.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="30.6" y="64" width="218.8" height="6"/>
+<path class="d-sep" d="M30,70 H250"/>
+<text class="d-title d-mono" x="42" y="60">workspaces</text>
+<text class="d-key" x="40" y="83">PK</text>
+<text class="d-col" x="76" y="83">id</text>
+<text class="d-type" x="240" y="83" text-anchor="end">uuid</text>
+<text class="d-col" x="76" y="101">name</text>
+<text class="d-type" x="240" y="101" text-anchor="end">text</text>
+<text class="d-col" x="76" y="119">created_at</text>
+<text class="d-type" x="240" y="119" text-anchor="end">timestamptz</text>
+<rect class="d-box" x="300" y="40" width="320" height="300" rx="6"/>
+<rect class="d-entity-head" x="300.6" y="40.6" width="318.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="300.6" y="64" width="318.8" height="6"/>
+<path class="d-sep" d="M300,70 H620"/>
+<text class="d-title d-mono" x="312" y="60">meetings</text>
+<text class="d-key" x="310" y="83">PK</text>
+<text class="d-col" x="346" y="83">id</text>
+<text class="d-type" x="610" y="83" text-anchor="end">uuid</text>
+<text class="d-key" x="310" y="101">FK</text>
+<text class="d-col" x="346" y="101">workspace_id</text>
+<text class="d-type" x="610" y="101" text-anchor="end">uuid</text>
+<text class="d-col" x="346" y="119">title</text>
+<text class="d-type" x="610" y="119" text-anchor="end">text</text>
+<text class="d-col" x="346" y="137">participants</text>
+<text class="d-type" x="610" y="137" text-anchor="end">text[]</text>
+<text class="d-key" x="310" y="155">UQ</text>
+<text class="d-col" x="346" y="155">idempotency_key</text>
+<text class="d-type" x="610" y="155" text-anchor="end">text, per workspace</text>
+<text class="d-col" x="346" y="173">status</text>
+<text class="d-type" x="610" y="173" text-anchor="end">text, checked</text>
+<text class="d-col" x="346" y="191">error</text>
+<text class="d-type" x="610" y="191" text-anchor="end">text</text>
+<text class="d-col" x="346" y="209">summary_error</text>
+<text class="d-type" x="610" y="209" text-anchor="end">text</text>
+<text class="d-col" x="346" y="227">duration_ms</text>
+<text class="d-type" x="610" y="227" text-anchor="end">bigint</text>
+<text class="d-col" x="346" y="245">audio_key</text>
+<text class="d-type" x="610" y="245" text-anchor="end">text</text>
+<text class="d-col" x="346" y="263">audio_content_type</text>
+<text class="d-type" x="610" y="263" text-anchor="end">text</text>
+<text class="d-col" x="346" y="281">audio_size</text>
+<text class="d-type" x="610" y="281" text-anchor="end">bigint</text>
+<text class="d-col" x="346" y="299">started_at</text>
+<text class="d-type" x="610" y="299" text-anchor="end">timestamptz</text>
+<text class="d-col" x="346" y="317">created_at</text>
+<text class="d-type" x="610" y="317" text-anchor="end">timestamptz</text>
+<text class="d-col" x="346" y="335">updated_at</text>
+<text class="d-type" x="610" y="335" text-anchor="end">timestamptz</text>
+<rect class="d-box" x="720" y="40" width="260" height="120" rx="6"/>
+<rect class="d-entity-head" x="720.6" y="40.6" width="258.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="720.6" y="64" width="258.8" height="6"/>
+<path class="d-sep" d="M720,70 H980"/>
+<text class="d-title d-mono" x="732" y="60">transcripts</text>
+<text class="d-key" x="730" y="83">PK·FK</text>
+<text class="d-col" x="766" y="83">meeting_id</text>
+<text class="d-type" x="970" y="83" text-anchor="end">uuid</text>
+<text class="d-key" x="730" y="101">FK</text>
+<text class="d-col" x="766" y="101">workspace_id</text>
+<text class="d-type" x="970" y="101" text-anchor="end">uuid</text>
+<text class="d-col" x="766" y="119">language</text>
+<text class="d-type" x="970" y="119" text-anchor="end">text</text>
+<text class="d-col" x="766" y="137">segments</text>
+<text class="d-type" x="970" y="137" text-anchor="end">jsonb</text>
+<text class="d-col" x="766" y="155">created_at</text>
+<text class="d-type" x="970" y="155" text-anchor="end">timestamptz</text>
+<rect class="d-box" x="720" y="190" width="260" height="228" rx="6"/>
+<rect class="d-entity-head" x="720.6" y="190.6" width="258.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="720.6" y="214" width="258.8" height="6"/>
+<path class="d-sep" d="M720,220 H980"/>
+<text class="d-title d-mono" x="732" y="210">summaries</text>
+<text class="d-key" x="730" y="233">PK·FK</text>
+<text class="d-col" x="766" y="233">meeting_id</text>
+<text class="d-type" x="970" y="233" text-anchor="end">uuid</text>
+<text class="d-key" x="730" y="251">FK</text>
+<text class="d-col" x="766" y="251">workspace_id</text>
+<text class="d-type" x="970" y="251" text-anchor="end">uuid</text>
+<text class="d-col" x="766" y="269">overview</text>
+<text class="d-type" x="970" y="269" text-anchor="end">text</text>
+<text class="d-col" x="766" y="287">takeaways</text>
+<text class="d-type" x="970" y="287" text-anchor="end">jsonb</text>
+<text class="d-col" x="766" y="305">decisions</text>
+<text class="d-type" x="970" y="305" text-anchor="end">jsonb</text>
+<text class="d-col" x="766" y="323">questions</text>
+<text class="d-type" x="970" y="323" text-anchor="end">jsonb</text>
+<text class="d-col" x="766" y="341">provider</text>
+<text class="d-type" x="970" y="341" text-anchor="end">text</text>
+<text class="d-col" x="766" y="359">model</text>
+<text class="d-type" x="970" y="359" text-anchor="end">text</text>
+<text class="d-col" x="766" y="377">input_tokens</text>
+<text class="d-type" x="970" y="377" text-anchor="end">bigint</text>
+<text class="d-col" x="766" y="395">output_tokens</text>
+<text class="d-type" x="970" y="395" text-anchor="end">bigint</text>
+<text class="d-col" x="766" y="413">created_at</text>
+<text class="d-type" x="970" y="413" text-anchor="end">timestamptz</text>
+<rect class="d-box" x="720" y="448" width="260" height="210" rx="6"/>
+<rect class="d-entity-head" x="720.6" y="448.6" width="258.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="720.6" y="472" width="258.8" height="6"/>
+<path class="d-sep" d="M720,478 H980"/>
+<text class="d-title d-mono" x="732" y="468">action_items</text>
+<text class="d-key" x="730" y="491">PK</text>
+<text class="d-col" x="766" y="491">id</text>
+<text class="d-type" x="970" y="491" text-anchor="end">uuid</text>
+<text class="d-key" x="730" y="509">FK</text>
+<text class="d-col" x="766" y="509">meeting_id</text>
+<text class="d-type" x="970" y="509" text-anchor="end">uuid</text>
+<text class="d-key" x="730" y="527">FK</text>
+<text class="d-col" x="766" y="527">workspace_id</text>
+<text class="d-type" x="970" y="527" text-anchor="end">uuid</text>
+<text class="d-col" x="766" y="545">position</text>
+<text class="d-type" x="970" y="545" text-anchor="end">integer</text>
+<text class="d-col" x="766" y="563">text</text>
+<text class="d-type" x="970" y="563" text-anchor="end">text</text>
+<text class="d-col" x="766" y="581">owner</text>
+<text class="d-type" x="970" y="581" text-anchor="end">text</text>
+<text class="d-col" x="766" y="599">due</text>
+<text class="d-type" x="970" y="599" text-anchor="end">text</text>
+<text class="d-col" x="766" y="617">done</text>
+<text class="d-type" x="970" y="617" text-anchor="end">boolean</text>
+<text class="d-col" x="766" y="635">created_at</text>
+<text class="d-type" x="970" y="635" text-anchor="end">timestamptz</text>
+<text class="d-col" x="766" y="653">updated_at</text>
+<text class="d-type" x="970" y="653" text-anchor="end">timestamptz</text>
+<rect class="d-muted-box" x="300" y="380" width="320" height="138" rx="6"/>
+<rect class="d-entity-head" x="300.6" y="380.6" width="318.8" height="29.4" rx="5.5"/>
+<rect class="d-entity-head" x="300.6" y="404" width="318.8" height="6"/>
+<path class="d-sep" d="M300,410 H620"/>
+<text class="d-title d-mono" x="312" y="400">river_job</text>
+<text class="d-type" x="610" y="400" text-anchor="end">managed by River</text>
+<text class="d-key" x="310" y="423">PK</text>
+<text class="d-col" x="346" y="423">id</text>
+<text class="d-type" x="610" y="423" text-anchor="end">bigint</text>
+<text class="d-col" x="346" y="441">kind</text>
+<text class="d-type" x="610" y="441" text-anchor="end">text</text>
+<text class="d-col" x="346" y="459">queue</text>
+<text class="d-type" x="610" y="459" text-anchor="end">text</text>
+<text class="d-col" x="346" y="477">state</text>
+<text class="d-type" x="610" y="477" text-anchor="end">enum</text>
+<text class="d-col" x="346" y="495">attempt</text>
+<text class="d-type" x="610" y="495" text-anchor="end">smallint</text>
+<text class="d-col" x="346" y="513">args</text>
+<text class="d-type" x="610" y="513" text-anchor="end">jsonb {meeting_id}</text>
+<rect class="d-box" x="30" y="380" width="220" height="70" rx="6"/>
+<text class="d-title" x="140.0" y="403.0" text-anchor="middle">RustFS · recordings</text>
+<text class="d-sub d-mono" x="140.0" y="421.0" text-anchor="middle">workspaces/{ws}/meetings/</text>
+<text class="d-sub d-mono" x="140.0" y="437.0" text-anchor="middle">{id}/recordings/{upload}.ext</text>
+<rect class="d-box" x="30" y="480" width="220" height="70" rx="6"/>
+<text class="d-title" x="140.0" y="503.0" text-anchor="middle">OpenSearch · meetings</text>
+<text class="d-sub" x="140.0" y="521.0" text-anchor="middle">one doc per meeting</text>
+<text class="d-sub" x="140.0" y="537.0" text-anchor="middle">_id = meetings.id</text>
+<path class="d-arrow acc" d="M250,79 H275 V97 H299" marker-end="url(#e-arr-acc)"/>
+<text class="d-lbl" x="262" y="72" text-anchor="middle">1 : N</text>
+<path class="d-arrow acc" d="M620,79 H719" marker-end="url(#e-arr-acc)"/>
+<text class="d-lbl" x="680" y="72" text-anchor="middle">1 : 1</text>
+<path class="d-arrow acc" d="M670,79 V229 H719" marker-end="url(#e-arr-acc)"/>
+<text class="d-lbl" x="697" y="222" text-anchor="middle">1 : 1</text>
+<path class="d-arrow acc" d="M670,229 V505 H719" marker-end="url(#e-arr-acc)"/>
+<text class="d-lbl" x="697" y="498" text-anchor="middle">1 : N</text>
+<path class="d-arrow ret" d="M300,241 H265 V415 H251" marker-end="url(#e-arr)"/>
+<text class="d-lbl d-mono" x="258" y="300" text-anchor="end">audio_key</text>
+<path class="d-arrow ret" d="M300,310 H285 V515 H251" marker-end="url(#e-arr)"/>
+<text class="d-lbl" x="258" y="470" text-anchor="end">derived copy</text>
+<path class="d-arrow ret" d="M460,380 V341" marker-end="url(#e-arr)"/>
+<text class="d-lbl d-mono" x="468" y="364" text-anchor="start">args.meeting_id, no FK</text>
+</svg>
