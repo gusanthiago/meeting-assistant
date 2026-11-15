@@ -199,6 +199,6 @@ Data volume, not request rate, is the main constraint.
 
 ## Demo
 
-A one-minute walkthrough: record a meeting in the browser, watch it get transcribed and summarized, then find it with search. Click the image to play the video.
+A one-minute walkthrough, played at 3x speed: record a meeting in the browser, watch it get transcribed and summarized, then find it with search. The full-quality video is [`docs/demo/demo.mp4`](docs/demo/demo.mp4).
 
-[![Demo: a recorded meeting with its transcript, a Claude summary and an action item](docs/demo/poster.jpg)](docs/demo/demo.mp4)
+![Demo: recording a meeting, its transcript with a Claude summary and an action item, then finding it with search](docs/demo/demo.gif)
