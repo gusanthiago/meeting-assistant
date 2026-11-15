@@ -81,6 +81,7 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       pgbouncer: { condition: service_healthy }
+      whisper: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
       interval: 3s
@@ -93,6 +94,15 @@ services:
       ASR_MODEL: ${WHISPER_MODEL:-small}
     volumes:
       - whispercache:/root/.cache
+    # The first start downloads the model (~1.3 GB) before serving; the API waits for it,
+    # so the first transcriptions don't burn their retries on a service that isn't up yet.
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "-o", "/dev/null", "http://localhost:9000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20m
+      start_interval: 5s
 
   web:
     build: web
