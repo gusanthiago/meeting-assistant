@@ -144,7 +144,7 @@ scripts/smoke.sh          end-to-end checks
 | Data | Postgres 18 (UUIDv7), PgBouncer 1.25, OpenSearch 3.8, RustFS 1.0 (S3-compatible) |
 | Speech | Whisper via openai-whisper-asr-webservice (faster-whisper) |
 | Web | React 19, Vite 6, Tailwind CSS 4, TanStack Query, openapi-fetch, Vitest |
-| Tooling | Docker Compose, Swagger UI, Claude Code and Maestri |
+| Tooling | Docker Compose, Swagger UI, Claude Code, Cursor and Maestri |
 
 ## Assumptions
 
@@ -193,12 +193,12 @@ Data volume, not request rate, is the main constraint.
 8. [ ] **Transcripts in object storage**, compressed, with a pointer in Postgres: ~35 GB of JSONB a day is ~13 TB a year in the main database. _Now: JSONB in Postgres._
 9. [ ] **Time-based partitioning** of `meetings` and `river_job`: ~700k meetings and ~2M jobs a day reach hundreds of millions of rows within a year. _Now: plain tables._
 10. [ ] **Redis for hot reads and per-workspace rate limits:** every upload spends GPU and LLM time, so one noisy workspace can run up the bill. _Now: no cache or rate limits._
+11. [ ] **SNS/SQS for the pipeline:** ~2M jobs a day in the main Postgres compete with app queries. SNS fans out events (`meeting.ready` to indexing and notifications), each step gets an SQS queue with a dead-letter queue, and a transactional outbox keeps a status change and its next job committing together. _Now: River jobs in the main Postgres._
 
 ### Medium: when the signal shows up
 
-11. [ ] **Several PgBouncer processes** (`so_reuseport`) or a managed pooler: when PgBouncer CPU saturates. _Now: one process, one core._
-12. [ ] **Read replicas** for lists and meeting pages: when reads dominate primary CPU. _Now: a single primary._
-13. [ ] **SNS/SQS for the pipeline:** when ~2M jobs a day compete with app queries. SNS fans out events (`meeting.ready` to indexing and notifications), each step gets an SQS queue with a dead-letter queue, and a transactional outbox keeps a status change and its next job committing together. _Now: River jobs in the main Postgres._
+12. [ ] **Several PgBouncer processes** (`so_reuseport`) or a managed pooler: when PgBouncer CPU saturates. _Now: one process, one core._
+13. [ ] **Read replicas** for lists and meeting pages: when reads dominate primary CPU. _Now: a single primary._
 14. [ ] **Separate segments index** with `collapse` on `meeting_id`: when nested documents inflate indexing cost and index size. _Now: segments nested in the meeting document._
 15. [ ] **LLM cost levers** (prompt caching, Message Batches API for non-urgent work): when spend per meeting becomes material. _Now: one Haiku 5.5 call per summary, ~$51k a month at 1M users._
 16. [ ] **GraphQL layer** over the same services, with REST kept for uploads: when several clients (mobile, integrations, public API) need different shapes of the same data. _Now: REST + OpenAPI, one client._
