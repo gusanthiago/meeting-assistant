@@ -136,7 +136,7 @@ deploy/pgbouncer/         PgBouncer image
 scripts/smoke.sh          end-to-end checks
 ```
 
-## Stack
+## Stack and third-party tools
 
 | Area | Tools |
 |---|---|
@@ -144,9 +144,15 @@ scripts/smoke.sh          end-to-end checks
 | Data | Postgres 18 (UUIDv7), PgBouncer 1.25, OpenSearch 3.8, RustFS 1.0 (S3-compatible) |
 | Speech | Whisper via openai-whisper-asr-webservice (faster-whisper) |
 | Web | React 19, Vite 6, Tailwind CSS 4, TanStack Query, openapi-fetch, Vitest |
-| Tooling | Docker Compose, Swagger UI, Claude Code && Maestri |
+| Tooling | Docker Compose, Swagger UI, Claude Code and Maestri |
 
-**Assumptions:** no sign-in yet (one seeded workspace); Whisper `small` on CPU, without speaker separation, takes a few minutes for a 30-minute meeting; uploads go through the API (200 MB limit); OpenAPI 3.0.3, since oapi-codegen doesn't fully support 3.1.
+## Assumptions
+
+- **No sign-in yet:** everything belongs to one seeded workspace, but every table already carries `workspace_id`.
+- **Transcription on CPU:** Whisper `small` takes a few minutes for a 30-minute meeting and has no speaker separation; lines are labeled with the participant's name when a meeting has exactly one.
+- **Offline by default:** without an Anthropic API key, a rule-based summarizer writes the summary and action items.
+- **Uploads go through the API**, with a 200 MB limit; presigned uploads are listed under Pending Scale Points.
+- **OpenAPI 3.0.3**, since oapi-codegen doesn't fully support 3.1 yet.
 
 ## Claude cost
 
